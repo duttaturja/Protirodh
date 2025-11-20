@@ -18,6 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.8.0",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "groq-sdk": "^0.36.0",
     "lucide-react": "^0.554.0",
     "mongodb": "^7.0.0",

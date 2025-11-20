@@ -150,9 +150,9 @@ export function CreateReportForm() {
             <SelectTrigger className="bg-secondary/30 border-transparent">
               <SelectValue placeholder="Select Division" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover border-border shadow-md z-50">
               {DIVISIONS.map((div) => (
-                <SelectItem key={div} value={div}>{div}</SelectItem>
+                <SelectItem key={div} value={div} className="cursor-pointer">{div}</SelectItem>
               ))}
             </SelectContent>
           </Select>
