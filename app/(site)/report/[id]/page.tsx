@@ -6,28 +6,30 @@ import { ArrowLeft, MapPin, Calendar, AlertTriangle, BadgeCheck } from "lucide-r
 import connectDB from "@/lib/mongodb";
 import CrimeReport from "@/models/CrimeReport";
 import User from "@/models/User"; // Necessary for population
+import { CommentSection } from "@/components/report/comment-section"; // <--- Added Import
 
 // Fetch data directly in Server Component
 async function getReport(id: string) {
   await connectDB();
   try {
+    // We need to populate author for the report card details
     const report = await CrimeReport.findById(id).populate("author", "name image role").lean();
     if (!report) return null;
-    return JSON.parse(JSON.stringify(report)); // Serialization for Client Components
+    // Convert MongoDB ObjectId and Dates to strings/numbers for React hydration
+    return JSON.parse(JSON.stringify(report)); 
   } catch (e) {
     return null;
   }
 }
 
 export default async function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // In Next.js 15/16 params is a Promise
   const { id } = await params;
   const report = await getReport(id);
 
   if (!report) return notFound();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-4">
         <Link href="/feed" className="p-2 hover:bg-secondary rounded-full transition-colors">
@@ -57,14 +59,14 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
                 {!report.isAnonymous && report.author?.role === "verified" && <BadgeCheck className="w-4 h-4 text-primary" />}
              </div>
              <div className="text-sm text-muted-foreground">
-                {report.isAnonymous ? "@anonymous" : `@${report.author?.name.replace(/\s+/g, '').toLowerCase()}`}
+                {report.isAnonymous ? "@anonymous" : `@${report.author?.name?.replace(/\s+/g, '').toLowerCase()}`}
              </div>
           </div>
         </div>
 
         {/* Content */}
         <h2 className="text-xl font-bold mb-2">{report.title}</h2>
-        <p className="text-base whitespace-pre-wrap mb-4">{report.description}</p>
+        <p className="text-base whitespace-pre-wrap mb-4 text-foreground/90">{report.description}</p>
 
         {/* Meta Info Chips */}
         <div className="flex flex-wrap gap-2 mb-4">
@@ -77,7 +79,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
                 {format(new Date(report.crimeTime), "PP p")}
             </div>
              {report.aiConfidenceScore < 30 && (
-                 <div className="flex items-center gap-1 text-sm bg-yellow-500/10 text-yellow-600 px-3 py-1 rounded-full">
+                 <div className="flex items-center gap-1 text-sm bg-yellow-500/10 text-yellow-600 px-3 py-1 rounded-full border border-yellow-500/20">
                     <AlertTriangle className="w-4 h-4" />
                     AI Flag: High Fake Risk
                 </div>
@@ -85,7 +87,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
         </div>
 
         {/* Full Images */}
-        {report.images.map((img: string, idx: number) => (
+        {report.images && report.images.map((img: string, idx: number) => (
           <div key={idx} className="relative w-full rounded-xl overflow-hidden border border-border mb-4 aspect-video">
              <Image src={img} alt="Evidence" fill className="object-cover" />
           </div>
@@ -96,18 +98,20 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
         </div>
         
         <div className="border-y border-border py-3 flex justify-around text-muted-foreground">
-            {/* Placeholder for stats */}
-            <span>{report.upvotes.length} <span className="text-sm">Upvotes</span></span>
-            <span>{report.downvotes.length} <span className="text-sm">Downvotes</span></span>
-        </div>
-
-        {/* Comment Section (Placeholder for next step) */}
-        <div className="mt-4">
-            <h3 className="font-bold mb-4">Comments</h3>
-            <div className="text-center py-8 text-muted-foreground">
-                No comments.
+            <div className="text-center">
+                <span className="font-bold text-foreground">{report.upvotes?.length || 0}</span> <span className="text-sm">Upvotes</span>
+            </div>
+            <div className="text-center">
+                <span className="font-bold text-foreground">{report.downvotes?.length || 0}</span> <span className="text-sm">Downvotes</span>
+            </div>
+             <div className="text-center">
+                <span className="font-bold text-foreground">{report.verificationScore || 0}</span> <span className="text-sm">Score</span>
             </div>
         </div>
+
+        {/* INTEGRATED COMMENT SECTION */}
+        <CommentSection reportId={report._id} />
+        
       </div>
     </div>
   );

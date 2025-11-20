@@ -6,8 +6,9 @@ export interface IComment extends Document {
   proofImage: string; // Mandatory proof
   author: mongoose.Types.ObjectId;
   reportId: mongoose.Types.ObjectId;
-  isVerifiedHelper: boolean; // Bonus feature
+  isVerifiedHelper: boolean;
   createdAt: Date;
+  isAnonymous: boolean;
 }
 
 const CommentSchema = new Schema<IComment>(
@@ -17,8 +18,9 @@ const CommentSchema = new Schema<IComment>(
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     reportId: { type: Schema.Types.ObjectId, ref: "CrimeReport", required: true },
     isVerifiedHelper: { type: Boolean, default: false },
+    isAnonymous: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Comment: Model<IComment> =

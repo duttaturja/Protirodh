@@ -13,6 +13,8 @@ export interface IUser extends Document {
   otpExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
+  followers: mongoose.Types.ObjectId[];
+  following: mongoose.Types.ObjectId[];
 }
 
 const UserSchema = new Schema<IUser>(
@@ -31,6 +33,8 @@ const UserSchema = new Schema<IUser>(
     bio: { type: String },
     otp: { type: String, select: false }, // Hidden by default
     otpExpiry: { type: Date, select: false },
+    followers: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    following: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
 );

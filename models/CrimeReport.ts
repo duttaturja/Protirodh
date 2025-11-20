@@ -17,6 +17,7 @@ export interface ICrimeReport extends Document {
   isVerifiedBadge: boolean; // Hackathon feature
   createdAt: Date;
   updatedAt: Date;
+  sharedFrom?: mongoose.Types.ObjectId;
 }
 
 const CrimeReportSchema = new Schema<ICrimeReport>(
@@ -35,6 +36,7 @@ const CrimeReportSchema = new Schema<ICrimeReport>(
     downvotes: [{ type: Schema.Types.ObjectId, ref: "User" }],
     aiConfidenceScore: { type: Number },
     isVerifiedBadge: { type: Boolean, default: false },
+    sharedFrom: { type: Schema.Types.ObjectId, ref: "CrimeReport" },
   },
   { timestamps: true }
 );
