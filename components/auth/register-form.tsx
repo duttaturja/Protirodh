@@ -1,4 +1,3 @@
-// components/auth/register-form.tsx
 "use client";
 
 import { useState } from "react";
@@ -6,32 +5,37 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 export function RegisterForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "" });
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    const data = await res.json();
-    setIsLoading(false);
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.message);
-    } else {
-      // Redirect to login with a flag to show OTP modal or banner
-      router.push(`/auth/login?verification_needed=true&email=${formData.email}`);
+      if (!res.ok) {
+        toast.error(data.message);
+      } else {
+        toast.success("Account created! Please verify your phone.");
+        // FIX: Redirect to Verify page instead of Login
+        router.push(`/auth/verify?email=${encodeURIComponent(formData.email)}`);
+      }
+    } catch (error) {
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,7 +54,7 @@ export function RegisterForm() {
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             className="bg-input border-transparent focus:border-primary"
-            placeholder="Turja Dutta"
+            placeholder="Username"
           />
         </div>
         <div className="space-y-2">
@@ -62,7 +66,7 @@ export function RegisterForm() {
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
             className="bg-input border-transparent focus:border-primary"
-            placeholder="you@example.com"
+            placeholder="email@example.com"
           />
         </div>
         <div className="space-y-2">
@@ -93,11 +97,17 @@ export function RegisterForm() {
             className="bg-input border-transparent focus:border-primary"
           />
         </div>
-        {error && <p className="text-sm text-destructive font-medium">{error}</p>}
         <Button type="submit" disabled={isLoading} className="w-full rounded-full font-bold h-12 bg-primary text-white hover:bg-primary/90">
           {isLoading ? "Creating Account..." : "Sign Up"}
         </Button>
       </form>
+      
+      <div className="text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <button type="button" onClick={() => router.push("/auth/login")} className="text-primary hover:underline font-medium">
+          Log in
+        </button>
+      </div>
     </div>
   );
 }

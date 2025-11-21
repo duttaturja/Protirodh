@@ -15,6 +15,10 @@ export interface IUser extends Document {
   updatedAt: Date;
   followers: mongoose.Types.ObjectId[];
   following: mongoose.Types.ObjectId[];
+  emergencyContact?: {
+    name: string;
+    phone: string;
+  };
 }
 
 const UserSchema = new Schema<IUser>(
@@ -31,14 +35,17 @@ const UserSchema = new Schema<IUser>(
     },
     isBanned: { type: Boolean, default: false },
     bio: { type: String },
-    otp: { type: String, select: false }, // Hidden by default
+    otp: { type: String, select: false },
     otpExpiry: { type: Date, select: false },
     followers: [{ type: Schema.Types.ObjectId, ref: "User" }],
     following: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    emergencyContact: {
+      name: { type: String },
+      phone: { type: String },
+    },
   },
   { timestamps: true }
 );
 
-// Check if model exists to prevent recompilation errors
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 export default User;

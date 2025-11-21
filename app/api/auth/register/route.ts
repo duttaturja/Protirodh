@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       console.log(`[DEV OTP] For ${formattedPhone}: ${otp}`);
       
       // Uncomment below to use real Twilio
-      // await sendSMS(formattedPhone, otp); 
+      await sendSMS(formattedPhone, otp); 
     } catch (smsError) {
       console.error("SMS Failed:", smsError);
     }

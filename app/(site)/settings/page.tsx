@@ -1,18 +1,75 @@
+// app/(site)/settings/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Ensure you have shadcn tabs
-import { User, Lock, Bell, Moon, LogOut } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Contact, Moon, LogOut, Trash2, Save } from "lucide-react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { setTheme, theme } = useTheme();
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Emergency Contact State
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
+
+  useEffect(() => {
+      // Ideally fetch current settings here. For MVP assuming blank or handled by context if available.
+      // In real app: fetch('/api/profile/me')...
+  }, []);
+
+  const handleSaveContact = async () => {
+      setSavingContact(true);
+      try {
+          const res = await fetch("/api/profile/update", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                  emergencyContact: { name: contactName, phone: contactPhone } 
+              }),
+          });
+          if (res.ok) toast.success("Emergency contact saved");
+          else toast.error("Failed to save");
+      } catch (e) {
+          toast.error("Error saving contact");
+      } finally {
+          setSavingContact(false);
+      }
+  };
+
+  const handleDeleteAccount = async () => {
+      const confirmText = prompt("To verify, type 'delete my account' below:");
+      if (confirmText !== "delete my account") {
+          return toast.error("Verification failed. Account not deleted.");
+      }
+
+      setIsDeleting(true);
+      try {
+          const res = await fetch("/api/users/delete", { method: "DELETE" });
+          const data = await res.json();
+          
+          if (res.ok) {
+              toast.success("Account deleted.");
+              signOut({ callbackUrl: "/" });
+          } else {
+              toast.error(data.message || "Failed to delete account.");
+          }
+      } catch (error) {
+          toast.error("Something went wrong.");
+      } finally {
+          setIsDeleting(false);
+      }
+  };
   
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -30,29 +87,54 @@ export default function SettingsPage() {
 
           {/* ACCOUNT SETTINGS */}
           <TabsContent value="account" className="space-y-6">
+            
+            {/* Emergency Contact Section (Replaces Profile Info) */}
             <div className="p-4 border border-border rounded-xl bg-card">
-                <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
-                    <User className="w-5 h-5" /> Profile Information
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-red-500">
+                    <Contact className="w-5 h-5" /> Emergency Contact
                 </h2>
                 <div className="space-y-4">
                     <div className="grid gap-2">
-                        <Label>Email</Label>
-                        <Input value={session?.user?.email || ""} disabled className="bg-secondary" />
+                        <Label>Contact Name</Label>
+                        <Input 
+                            value={contactName} 
+                            onChange={(e) => setContactName(e.target.value)}
+                            placeholder="e.g. Parent or Spouse"
+                        />
                     </div>
                     <div className="grid gap-2">
-                        <Label>User ID</Label>
-                        <Input value={session?.user?.id || ""} disabled className="bg-secondary font-mono text-xs" />
+                        <Label>Phone Number</Label>
+                        <Input 
+                            value={contactPhone} 
+                            onChange={(e) => setContactPhone(e.target.value)}
+                            placeholder="+880..."
+                        />
                     </div>
+                    <Button onClick={handleSaveContact} disabled={savingContact} className="w-full bg-primary">
+                        {savingContact ? "Saving..." : <><Save className="w-4 h-4 mr-2"/> Save Contact</>}
+                    </Button>
                 </div>
             </div>
 
-            <div className="p-4 border border-border rounded-xl bg-card">
-                <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-red-500">
+            <div className="p-4 border border-red-200 dark:border-red-900/50 rounded-xl bg-red-50 dark:bg-red-950/10">
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-red-600 dark:text-red-400">
                     <LogOut className="w-5 h-5" /> Danger Zone
                 </h2>
-                <Button variant="destructive" onClick={() => signOut()} className="w-full">
-                    Sign Out
-                </Button>
+                <div className="space-y-3">
+                    <Button variant="outline" onClick={() => signOut()} className="w-full border-red-200 hover:bg-red-100 hover:text-red-600 dark:border-red-900 dark:hover:bg-red-900/30">
+                        Sign Out
+                    </Button>
+                    <Button 
+                        variant="destructive" 
+                        onClick={handleDeleteAccount} 
+                        disabled={isDeleting}
+                        className="w-full bg-red-600 hover:bg-red-700"
+                    >
+                        {isDeleting ? "Deleting..." : (
+                            <span className="flex items-center gap-2"><Trash2 className="w-4 h-4" /> Delete Account</span>
+                        )}
+                    </Button>
+                </div>
             </div>
           </TabsContent>
 
@@ -72,13 +154,6 @@ export default function SettingsPage() {
                         <p className="text-xs text-muted-foreground">Allow precise location on reports</p>
                     </div>
                     <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                        <Label className="text-base">Anonymous by Default</Label>
-                        <p className="text-xs text-muted-foreground">Always hide my name on new reports</p>
-                    </div>
-                    <Switch />
                 </div>
              </div>
           </TabsContent>

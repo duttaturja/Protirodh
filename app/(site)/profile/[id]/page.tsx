@@ -74,7 +74,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
              {isOwnProfile ? (
                  <>
                     {user.role === "unverified" && (
-                        <Link href="/auth/verify-request">
+                        <Link href="/auth/verify">
                             <button className="px-4 py-1.5 bg-primary text-white rounded-full font-bold text-sm hover:bg-primary/90 transition-colors">
                                 Get Verified
                             </button>

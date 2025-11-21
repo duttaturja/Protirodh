@@ -21,31 +21,30 @@ export async function POST(req: Request) {
     const { reportId } = await req.json();
 
     // Create a new report entry that acts as a "Retweet"
-    // We copy essential metadata for sorting but keep content empty or specific
     const originalReport = await CrimeReport.findById(reportId);
     if (!originalReport) return NextResponse.json({ message: "Original report not found" }, { status: 404 });
 
-    // Check if already shared by this user to prevent duplicates (Optional logic)
+    // Check if already shared by this user to prevent duplicates
     const existingShare = await CrimeReport.findOne({ 
         author: session.user.id, 
         sharedFrom: reportId 
     });
     
     if (existingShare) {
-        // Optionally undo share (toggle)
+        // Undo share (toggle)
         await CrimeReport.findByIdAndDelete(existingShare._id);
         return NextResponse.json({ message: "Unshared", action: "removed" }, { status: 200 });
     }
 
     await CrimeReport.create({
-      title: "", // Empty for shares (or use "Shared a post")
-      description: "",
-      division: originalReport.division, // Inherit location for filtering
+      title: "Shared Report", // Placeholder to satisfy 'required'
+      description: "Shared this report.", // Placeholder to satisfy 'required'
+      division: originalReport.division,
       district: originalReport.district,
-      images: [], // No new images
+      images: [], 
       author: session.user.id,
-      sharedFrom: reportId, // THE LINK
-      isAnonymous: false, // Shares are usually public
+      sharedFrom: reportId, 
+      isAnonymous: false,
       crimeTime: new Date(),
       verificationScore: 0,
     });
@@ -53,6 +52,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Shared successfully", action: "shared" }, { status: 201 });
 
   } catch (error: any) {
+    console.error("Share Error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
