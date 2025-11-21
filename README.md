@@ -166,8 +166,11 @@ We welcome contributors! To contribute:
 
 This project is distributed under the [MIT LICENSE](LICENSE).
 You are free to use, modify, and distribute with attribution.
+
 ---
+
 ## ❤️ Acknowledgments
+
 - **Google Gemini** for powering the AI verification engine.
 - **Vercel** for hosting infrastructure.
 - **Shadcn UI** for the beautiful component library.
