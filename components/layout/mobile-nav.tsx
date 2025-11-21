@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Bell, PenSquare, Settings, Phone, Map, User } from "lucide-react";
+import { Home, Search, Bell, PenSquare, Settings, Phone, Map, User, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -22,6 +22,8 @@ export function MobileNav() {
     { href: "/explore", icon: Search, label: "Explore" },
     { href: `/profile/${session?.user?.id}`, icon: User, label: "Profile" }, 
     { href: "/notifications", icon: Bell, label: "Notifications" },
+    { href: "/heatmap", icon: Map, label: "Map" },
+    { href: "/leaderboard", icon: Trophy, label: "Leaderboard" },
   ];
 
   return (

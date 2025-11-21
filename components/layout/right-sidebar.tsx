@@ -39,6 +39,28 @@ export function RightSidebar() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Leaderboard
+        const lbRes = await fetch("/api/reports/leaderboard");
+        const lbData = await lbRes.json();
+        setLeaderboard(lbData.leaderboard || []);
+
+        // Fetch recent reports for Heatmap
+        const mapRes = await fetch("/api/reports/feed?limit=50"); // Fetch more points for map
+        const mapData = await mapRes.json();
+        setHeatmapData(mapData.reports || []);
+
+      } catch (error) {
+        console.error("Failed to fetch sidebar data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const handleFollow = async (targetUserId: string) => {
       try {
         const res = await fetch("/api/users/follow", {
@@ -97,6 +119,7 @@ export function RightSidebar() {
       </div>
 
       {/* Heatmap Widget */}
+      <Link href="/heatmap">
       <div className="bg-secondary/30 rounded-2xl border border-border overflow-hidden mb-6">
         <h2 className="font-extrabold text-xl p-4 pb-2 flex items-center gap-2">
             <Map className="w-5 h-5 text-primary" /> Live Heatmap
@@ -109,8 +132,10 @@ export function RightSidebar() {
              )}
         </div>
       </div>
+      </Link>
 
       {/* Leaderboard Card */}
+      <Link href="/leaderboard">
       <div className="bg-secondary/30 rounded-2xl border border-border overflow-hidden">
         <h2 className="font-extrabold text-xl p-4 pb-2 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" /> Top Contributors
@@ -137,6 +162,7 @@ export function RightSidebar() {
             <div className="p-4 text-muted-foreground text-sm">No data available yet.</div>
         )}
       </div>
+      </Link>
 
       {/* Footer */}
       <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 px-4 text-xs text-muted-foreground">
