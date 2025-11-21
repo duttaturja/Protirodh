@@ -1,4 +1,3 @@
-// app/(site)/profile/[id]/page.tsx
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,13 +8,12 @@ import CrimeReport from "@/models/CrimeReport";
 import { ReportCard } from "@/components/feed/report-card";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { FollowButton } from "@/components/profile/follow-button"; // Ensure you create this component
+import { FollowButton } from "@/components/profile/follow-button";
 
 async function getUserProfile(id: string) {
   await connectDB();
   try {
     const user = await User.findById(id).lean();
-    // Find reports authored by user OR shared by user
     const reports = await CrimeReport.find({ author: id })
       .sort({ createdAt: -1 })
       .populate("author", "name image role")
@@ -41,31 +39,28 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   const { user, reports } = data;
   
   const isOwnProfile = session?.user?.id === id;
-  // Check if logged-in user is in the profile owner's followers list
   const isFollowing = user.followers?.includes(session?.user?.id);
 
   return (
     <div className="min-h-screen bg-background pb-20">
-       {/* Sticky Header */}
-       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-1 flex items-center gap-6">
-        <Link href="/feed" className="p-2 hover:bg-secondary rounded-full transition-colors">
+       {/* Header */}
+       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border px-4 py-1 flex items-center gap-6 h-[53px]">
+        <Link href="/feed" className="p-2 -ml-2 hover:bg-secondary rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="py-1">
-            <h1 className="text-lg font-bold leading-tight">{user.name}</h1>
+        <div className="flex flex-col">
+            <h1 className="text-lg font-bold leading-none">{user.name}</h1>
             <span className="text-xs text-muted-foreground">{reports.length} posts</span>
         </div>
       </div>
 
-      {/* Banner Image */}
-      <div className="h-32 bg-secondary relative">
-         {/* Placeholder for banner */}
-      </div>
+      {/* Banner */}
+      <div className="h-32 bg-neutral-700 relative"></div>
 
-      {/* Profile Info Section */}
+      {/* Profile Info */}
       <div className="px-4 pb-4 relative">
-          {/* Floating Avatar */}
-          <div className="w-32 h-32 rounded-full border-4 border-background bg-muted absolute -top-16 overflow-hidden">
+          {/* Avatar */}
+          <div className="w-[134px] h-[134px] rounded-full border-4 border-background bg-background absolute -top-[67px] overflow-hidden">
              <Image 
                 src={user.image || "/placeholder-user.jpg"} 
                 alt={user.name} 
@@ -74,20 +69,17 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
              />
           </div>
           
-          {/* Action Buttons Row */}
-          <div className="flex justify-end py-3 h-16 gap-2">
+          {/* Actions */}
+          <div className="flex justify-end py-3 gap-2 min-h-[60px]">
              {isOwnProfile ? (
                  <>
-                    {/* Verify Button (If Needed) */}
                     {user.role === "unverified" && (
                         <Link href="/auth/verify-request">
-                            <button className="px-4 py-1.5 bg-primary text-white rounded-full font-bold text-sm hover:bg-primary/90 transition-colors shadow-md">
+                            <button className="px-4 py-1.5 bg-primary text-white rounded-full font-bold text-sm hover:bg-primary/90 transition-colors">
                                 Get Verified
                             </button>
                         </Link>
                     )}
-                    
-                    {/* Edit Profile */}
                     <Link href="/profile/edit">
                         <button className="px-4 py-1.5 border border-border rounded-full font-bold text-sm hover:bg-secondary transition-colors">
                             Edit profile
@@ -95,14 +87,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                     </Link>
                  </>
              ) : (
-                 /* Follow Button for Others */
                  <FollowButton targetUserId={id} initialIsFollowing={!!isFollowing} />
              )}
           </div>
 
-          {/* User Details */}
-          <div className="mt-2">
-             <h2 className="text-xl font-black flex items-center gap-1">
+          {/* Details */}
+          <div className="mt-1">
+             <h2 className="text-xl font-black flex items-center gap-1 text-foreground">
                 {user.name}
                 {user.role === "verified" && <BadgeCheck className="w-5 h-5 text-primary" />}
              </h2>
@@ -115,34 +106,35 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
                 <span>Joined {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
              </div>
 
-             <div className="flex gap-4 mt-3 text-sm">
+             <div className="flex gap-5 mt-3 text-sm">
                 <div className="hover:underline cursor-pointer">
-                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> <span className="text-muted-foreground">Following</span>
+                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> <span className="text-muted-foreground ml-1">Following</span>
                 </div>
                 <div className="hover:underline cursor-pointer">
-                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> <span className="text-muted-foreground">Followers</span>
+                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> <span className="text-muted-foreground ml-1">Followers</span>
                 </div>
              </div>
           </div>
       </div>
 
-      {/* Profile Tabs */}
+      {/* Tabs */}
       <div className="flex border-b border-border mt-2">
-          <div className="flex-1 text-center py-3 font-bold text-sm border-b-4 border-primary cursor-pointer hover:bg-secondary/30 transition-colors">
-              Posts
+          <div className="flex-1 text-center h-[53px] flex items-center justify-center hover:bg-secondary/30 cursor-pointer relative">
+              <span className="font-bold text-sm text-foreground">Posts</span>
+              <div className="absolute bottom-0 h-1 w-14 bg-primary rounded-full"></div>
           </div>
-          <div className="flex-1 text-center py-3 font-medium text-sm text-muted-foreground cursor-pointer hover:bg-secondary/30 transition-colors">
-              Replies
+          <div className="flex-1 text-center h-[53px] flex items-center justify-center hover:bg-secondary/30 cursor-pointer">
+              <span className="font-medium text-sm text-muted-foreground">Replies</span>
           </div>
-          <div className="flex-1 text-center py-3 font-medium text-sm text-muted-foreground cursor-pointer hover:bg-secondary/30 transition-colors">
-              Media
+          <div className="flex-1 text-center h-[53px] flex items-center justify-center hover:bg-secondary/30 cursor-pointer">
+              <span className="font-medium text-sm text-muted-foreground">Media</span>
           </div>
-          <div className="flex-1 text-center py-3 font-medium text-sm text-muted-foreground cursor-pointer hover:bg-secondary/30 transition-colors">
-              Likes
+          <div className="flex-1 text-center h-[53px] flex items-center justify-center hover:bg-secondary/30 cursor-pointer">
+              <span className="font-medium text-sm text-muted-foreground">Likes</span>
           </div>
       </div>
 
-      {/* User Posts Feed */}
+      {/* Feed */}
       <div>
          {reports.length === 0 ? (
              <div className="p-8 text-center text-muted-foreground">

@@ -4,9 +4,20 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowBigUp, ArrowBigDown, MessageSquare, Share2, BadgeCheck, Repeat2 } from "lucide-react";
+import { ArrowBigUp, ArrowBigDown, MessageSquare, Share2, BadgeCheck, Repeat2, Loader2 } from "lucide-react";
 import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner"; // Import Toast
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"; // Import Dialog
 
 interface ReportCardProps {
   report: any;
@@ -15,9 +26,9 @@ interface ReportCardProps {
 
 export function ReportCard({ report, currentUserId }: ReportCardProps) {
   const router = useRouter();
+  const [showShareDialog, setShowShareDialog] = useState(false); // State for dialog
   
   // --- RENDER LOGIC FOR SHARED POSTS ---
-  // If this is a "share" (retweet), we want to display the ORIGINAL post content
   const isRetweet = !!report.sharedFrom;
   const displayReport = isRetweet ? report.sharedFrom : report;
 
@@ -29,7 +40,6 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
     return null;
   });
 
-  // If original report was deleted but the share exists
   if (isRetweet && !displayReport) {
       return (
         <div className="p-4 border-b border-border text-muted-foreground text-sm bg-secondary/5">
@@ -39,7 +49,10 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
   }
 
   const handleVote = async (type: "upvote" | "downvote") => {
-    if (!currentUserId) return alert("Please login to vote");
+    if (!currentUserId) {
+        toast.error("Please login to vote");
+        return;
+    }
 
     const previousScore = score;
     const previousStatus = voteStatus;
@@ -76,51 +89,59 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
         body: JSON.stringify({ reportId: displayReport._id, type }),
       });
     } catch (error) {
-      setScore(previousScore); // Revert on error
+      setScore(previousScore);
       setVoteStatus(previousStatus);
+      toast.error("Failed to register vote");
     }
   };
 
-  const handleShare = async (e: React.MouseEvent) => {
+  const handleShareClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!currentUserId) return alert("Please login to share");
-    
-    const confirmShare = window.confirm("Share this report to your profile?");
-    if (!confirmShare) return;
+    if (!currentUserId) {
+        toast.error("Please login to share");
+        return;
+    }
+    setShowShareDialog(true); // Open Custom Dialog
+  };
 
+  const confirmShare = async () => {
     try {
-        // Always share the ORIGINAL id, even if we are sharing a share
         const targetId = displayReport._id;
-        
         const res = await fetch("/api/reports/share", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ reportId: targetId }),
         });
         
-        if (res.ok) alert("Shared to your profile!");
-        else {
+        if (res.ok) {
+            const data = await res.json();
+            if (data.action === "removed") {
+                toast.success("Removed from your profile");
+            } else {
+                toast.success("Shared to your profile!");
+            }
+        } else {
             const err = await res.json();
-            alert(err.message);
+            toast.error(err.message);
         }
     } catch (err) {
-        console.error(err);
+        toast.error("Failed to share report");
+    } finally {
+        setShowShareDialog(false);
     }
   };
 
-  // Navigate to detail page
   const goToDetail = (e: React.MouseEvent) => {
-    // Don't navigate if clicking buttons
     if ((e.target as HTMLElement).closest("button")) return;
     router.push(`/report/${displayReport._id}`);
   };
 
   return (
+    <>
     <article 
       onClick={goToDetail}
       className="border-b border-border hover:bg-secondary/5 transition-colors cursor-pointer block"
     >
-      {/* Retweet Header Label */}
       {isRetweet && (
           <div className="px-10 pt-2 pb-1 flex items-center gap-2 text-xs font-bold text-muted-foreground">
               <Repeat2 className="w-3 h-3" />
@@ -129,7 +150,6 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
       )}
 
       <div className="px-4 py-3 flex gap-3">
-        {/* Avatar */}
         <div className="flex-shrink-0">
           <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden relative">
              {displayReport.isAnonymous ? (
@@ -145,9 +165,7 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
           </div>
         </div>
 
-        {/* Content Column */}
         <div className="flex-1 min-w-0">
-          {/* User Info Header */}
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1 overflow-hidden">
               <span className="font-bold text-foreground truncate hover:underline">
@@ -173,7 +191,6 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
             </div>
           </div>
 
-          {/* Text Content */}
           <div className="mt-1">
             <h3 className="text-sm font-bold text-foreground">{displayReport.title}</h3>
             <p className="text-sm text-foreground/90 whitespace-pre-wrap line-clamp-3 mt-0.5">
@@ -181,7 +198,6 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
             </p>
           </div>
 
-          {/* Media Attachment (Compact) */}
           {displayReport.images && displayReport.images.length > 0 && (
             <div className="mt-3 rounded-xl overflow-hidden border border-border relative w-full aspect-video bg-secondary/20">
               <Image 
@@ -193,10 +209,7 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
             </div>
           )}
 
-          {/* Interaction Bar */}
           <div className="flex items-center justify-between mt-3 max-w-[425px] text-muted-foreground">
-            
-            {/* Votes */}
             <div className="flex items-center group -ml-2">
                <button 
                  onClick={(e) => { e.stopPropagation(); handleVote("upvote"); }}
@@ -217,16 +230,14 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
                </button>
             </div>
 
-            {/* Comments Indicator */}
             <div className="flex items-center gap-1 group hover:text-primary transition-colors">
               <div className="p-2 rounded-full group-hover:bg-primary/10">
                 <MessageSquare className="w-4 h-4" />
               </div>
             </div>
 
-            {/* Share / Retweet */}
             <button 
-              onClick={handleShare}
+              onClick={handleShareClick} // Opens Dialog
               className="flex items-center gap-1 group hover:text-green-500 transition-colors"
             >
               <div className="p-2 rounded-full group-hover:bg-green-500/10">
@@ -234,7 +245,6 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
               </div>
             </button>
 
-            {/* Verified Status Icon */}
              <div className="flex items-center">
                {displayReport.isVerifiedBadge && (
                   <BadgeCheck className="w-4 h-4 text-primary" />
@@ -244,5 +254,24 @@ export function ReportCard({ report, currentUserId }: ReportCardProps) {
         </div>
       </div>
     </article>
+
+    {/* CONFIRMATION DIALOG */}
+    <AlertDialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Share this report?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This report will appear on your profile for your followers to see.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={(e) => { e.stopPropagation(); confirmShare(); }}>
+            Share
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Bell, User, PenSquare, LogOut } from "lucide-react";
+import { Home, Search, Bell, User, LogOut, Settings, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { signOut, useSession } from "next-auth/react";
@@ -16,7 +16,13 @@ export function Sidebar() {
     { href: "/explore", label: "Explore", icon: Search },
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: `/profile/${session?.user?.id}`, label: "Profile", icon: User },
+    { href: "/settings", label: "Settings", icon: Settings },
   ];
+
+  // Add Admin Dashboard if user is admin
+  if (session?.user?.role === "admin") {
+      links.push({ href: "/admin", label: "Admin Dashboard", icon: ShieldAlert });
+  }
 
   return (
     <div className="hidden md:flex flex-col h-screen sticky top-0 w-[275px] px-4 border-r border-border bg-background z-30">

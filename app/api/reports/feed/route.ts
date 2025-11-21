@@ -11,37 +11,52 @@ export async function GET(req: Request) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     
-    const type = searchParams.get("type") || "foryou"; // 'foryou' | 'trending'
+    const type = searchParams.get("type") || "foryou"; // 'foryou' | 'trending' | 'explore'
     const page = parseInt(searchParams.get("page") || "1");
     const limit = 10;
+    const division = searchParams.get("division");
+    const search = searchParams.get("search");
 
     let query: any = {};
     let sortOption: any = { createdAt: -1 };
 
     if (type === "trending") {
-       // Trending: High verification score, recent
        sortOption = { verificationScore: -1, createdAt: -1 };
-       // Optional: Only show posts from last 7 days for trending
     } else if (type === "foryou") {
-       // For You: Posts from people I follow + My own posts
        if (session) {
            const currentUser = await User.findById(session.user.id);
            const followingIds = currentUser?.following || [];
            query = {
                $or: [
-                   { author: { $in: [...followingIds, session.user.id] } }, // Followed users + Self
-                   { verificationScore: { $gt: 20 } } // Mix in very high quality posts
+                   { author: { $in: [...followingIds, session.user.id] } },
+                   { verificationScore: { $gt: 20 } }
                ]
            };
        }
-       // If not logged in, 'For You' falls back to standard feed
+    } else if (type === "explore") {
+        // Explore mode: Show all recent posts by default
+        // Filters applied below
+    }
+
+    // Apply Filters
+    if (division && division !== "all") {
+        query.division = division;
+    }
+
+    // Apply Search (Basic Regex for MVP)
+    if (search) {
+        query.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+            { district: { $regex: search, $options: "i" } }
+        ];
     }
 
     const reports = await CrimeReport.find(query)
       .populate("author", "name image role")
       .populate({
          path: "sharedFrom",
-         populate: { path: "author", select: "name image role" } // Nested populate for shares
+         populate: { path: "author", select: "name image role" }
       })
       .sort(sortOption)
       .skip((page - 1) * limit)

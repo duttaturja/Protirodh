@@ -1,4 +1,3 @@
-// middleware.ts
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
@@ -7,46 +6,55 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
-    // 1. Redirect to login if not authenticated at all
-    if (!token) {
-      return NextResponse.redirect(new URL("/auth/login", req.url));
+    // 1. Protect Admin Routes
+    if (path.startsWith("/admin")) {
+      if (token?.role !== "admin") {
+        return NextResponse.redirect(new URL("/feed", req.url));
+      }
     }
 
-    // 2. RESTRICT UNVERIFIED USERS
-    // If they try to create a report, vote, or comment
-    if (token.role === "unverified") {
+    // 2. Redirect Unverified Users trying to post/comment
+    if (token?.role === "unverified") {
       if (
         path.startsWith("/feed/create") || 
         path.includes("/api/reports/create") ||
         path.includes("/api/comments") || 
         path.includes("/api/votes")
       ) {
-        // For API requests, return JSON error (handled by Next.js usually, but good to be explicit)
         if (path.startsWith("/api")) {
           return NextResponse.json(
-            { message: "You must verify your account to perform this action." },
+            { message: "Verify your account first." },
             { status: 403 }
           );
         }
-        // For page visits, redirect to verification page
-        return NextResponse.redirect(new URL("/auth/verify-request", req.url));
+        return NextResponse.redirect(new URL("/auth/verify", req.url));
       }
     }
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token, // Ensure user is logged in
+      authorized: ({ req, token }) => {
+        const path = req.nextUrl.pathname;
+        
+        // Public Routes (No Login Required)
+        if (
+          path === "/" || 
+          path.startsWith("/auth") || 
+          path.startsWith("/api/auth") ||
+          path.startsWith("/_next") || 
+          path.startsWith("/favicon.ico") ||
+          path.startsWith("/public")
+        ) {
+          return true;
+        }
+
+        // All other routes require a token
+        return !!token;
+      },
     },
   }
 );
 
-// Define protected routes
 export const config = {
-  matcher: [
-    "/feed/create",     // Posting page
-    "/api/reports/create", // Posting API
-    "/api/comments/:path*", // Commenting API
-    "/api/votes/:path*",    // Voting API
-    "/profile/edit",    // Profile editing
-  ]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
